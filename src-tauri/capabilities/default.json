@@ -1,0 +1,175 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for the floating quota widget",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-start-resize-dragging",
+    "core:window:allow-set-size",
+    "core:window:allow-set-min-size",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "core:window:allow-close",
+    "notification:default",
+    "notification:allow-notify",
+    "notification:allow-request-permission",
+    "notification:allow-is-permission-granted",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled",
+    "store:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "codex",
+          "cmd": "codex",
+          "args": ["status", "--json"],
+          "sidecar": false
+        },
+        {
+          "name": "codex-cmd",
+          "cmd": "codex.cmd",
+          "args": ["status", "--json"],
+          "sidecar": false
+        },
+        {
+          "name": "codex-exe",
+          "cmd": "codex.exe",
+          "args": ["status", "--json"],
+          "sidecar": false
+        },
+        {
+          "name": "codex-model-catalog",
+          "cmd": "codex",
+          "args": ["debug", "models"],
+          "sidecar": false
+        },
+        {
+          "name": "codex-model-catalog-cmd",
+          "cmd": "codex.cmd",
+          "args": ["debug", "models"],
+          "sidecar": false
+        },
+        {
+          "name": "codex-model-catalog-exe",
+          "cmd": "codex.exe",
+          "args": ["debug", "models"],
+          "sidecar": false
+        },
+        {
+          "name": "antigravity",
+          "cmd": "antigravity",
+          "args": ["quota", "--json"],
+          "sidecar": false
+        },
+        {
+          "name": "antigravity-cmd",
+          "cmd": "antigravity.cmd",
+          "args": ["quota", "--json"],
+          "sidecar": false
+        },
+        {
+          "name": "antigravity-exe",
+          "cmd": "antigravity.exe",
+          "args": ["quota", "--json"],
+          "sidecar": false
+        },
+        {
+          "name": "gcloud",
+          "cmd": "gcloud",
+          "args": ["ai", "quota", "list", "--format=json"],
+          "sidecar": false
+        },
+        {
+          "name": "gcloud-cmd",
+          "cmd": "gcloud.cmd",
+          "args": ["ai", "quota", "list", "--format=json"],
+          "sidecar": false
+        },
+        {
+          "name": "claude-version",
+          "cmd": "claude",
+          "args": ["--version"],
+          "sidecar": false
+        },
+        {
+          "name": "claude-version-cmd",
+          "cmd": "claude.cmd",
+          "args": ["--version"],
+          "sidecar": false
+        },
+        {
+          "name": "claude-version-exe",
+          "cmd": "claude.exe",
+          "args": ["--version"],
+          "sidecar": false
+        },
+        {
+          "name": "claude-auth-status",
+          "cmd": "claude",
+          "args": ["auth", "status"],
+          "sidecar": false
+        },
+        {
+          "name": "claude-auth-status-cmd",
+          "cmd": "claude.cmd",
+          "args": ["auth", "status"],
+          "sidecar": false
+        },
+        {
+          "name": "claude-auth-status-exe",
+          "cmd": "claude.exe",
+          "args": ["auth", "status"],
+          "sidecar": false
+        },
+        {
+          "name": "agy-quota",
+          "cmd": "agy",
+          "args": ["-p", "/quota", "--output-format", "json"],
+          "sidecar": false
+        },
+        {
+          "name": "agy-quota-exe",
+          "cmd": "agy.exe",
+          "args": ["-p", "/quota", "--output-format", "json"],
+          "sidecar": false
+        },
+        {
+          "name": "agy-model-catalog",
+          "cmd": "agy",
+          "args": ["models"],
+          "sidecar": false
+        },
+        {
+          "name": "agy-model-catalog-cmd",
+          "cmd": "agy.cmd",
+          "args": ["models"],
+          "sidecar": false
+        },
+        {
+          "name": "agy-model-catalog-exe",
+          "cmd": "agy.exe",
+          "args": ["models"],
+          "sidecar": false
+        }
+      ]
+    },
+    {
+      "identifier": "http:allow-fetch",
+      "allow": [
+        { "url": "https://chatgpt.com/*" },
+        { "url": "https://*.chatgpt.com/*" },
+        { "url": "https://claude.ai/*" },
+        { "url": "https://*.claude.ai/*" },
+        { "url": "https://gemini.google.com/*" },
+        { "url": "https://*.gemini.google.com/*" },
+        { "url": "https://fonts.googleapis.com/*" },
+        { "url": "https://fonts.gstatic.com/*" }
+      ]
+    }
+  ]
+}

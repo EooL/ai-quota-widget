@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-ssr
+.DS_Store
+*.local
+src-tauri/target
+src-tauri/gen
+src-tauri/WixTools
+.idea
+.vscode
+*.log
+
+.backup-*.tgz
+tauri-restart*.log
+tauri-restart*.err.log
