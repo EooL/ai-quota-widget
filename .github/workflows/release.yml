@@ -39,6 +39,17 @@ jobs:
 
       - run: yarn install --frozen-lockfile
 
+      # Tauri refuză build-ul dacă @tauri-apps/api și crate-ul `tauri` diferă la versiunea minor.
+      # Aliniem pachetul npm la versiunea din Cargo.lock (ex. tauri 2.12.x -> @tauri-apps/api ~2.12.0).
+      - name: Align @tauri-apps/api with the tauri crate
+        shell: bash
+        run: |
+          TAURI_VER=$(grep -A1 '^name = "tauri"$' src-tauri/Cargo.lock | grep '^version' | cut -d'"' -f2)
+          MINOR=$(echo "$TAURI_VER" | cut -d. -f1,2)
+          echo "tauri crate $TAURI_VER -> @tauri-apps/api ~$MINOR.0"
+          yarn upgrade "@tauri-apps/api@~$MINOR.0"
+          yarn list --pattern "@tauri-apps/api" --depth=0
+
       # Verificări înainte de ambalare: dacă pică, nu se publică nimic.
       - name: Typecheck frontend
         run: yarn tsc --noEmit
