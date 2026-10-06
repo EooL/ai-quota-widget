@@ -1,6 +1,6 @@
 [package]
 name = "ai-quota-widget"
-version = "1.0.0"
+version = "1.0.1"
 description = "Floating desktop widget for ChatGPT, Gemini and Claude quotas"
 authors = ["AI Quota Widget"]
 edition = "2021"

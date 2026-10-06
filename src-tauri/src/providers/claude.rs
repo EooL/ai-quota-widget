@@ -114,6 +114,15 @@ pub async fn fetch(app: &AppHandle) -> PlatformMetric {
 
 async fn fetch_inner(app: &AppHandle) -> PlatformMetric {
     let now = now_ms();
+    {
+        // După „token expirat”, dacă fișierul are acum un token valid (ex. Claude Code l-a reînnoit),
+        // nu mai așteptăm backoff-ul.
+        let mut st = lock_state();
+        let expired_err = st.last_error.as_deref().map_or(false, |e| e.contains("expired"));
+        if expired_err && load_credentials().map_or(false, |c| !c.expired(now)) {
+            st.next_attempt_ms = 0;
+        }
+    }
     let plan = {
         let st = lock_state();
         if st.should_fetch(now) {
@@ -208,6 +217,15 @@ async fn try_http(app: &AppHandle, now: i64) -> Result<(Windows, Option<String>)
             // Efect secundar dorit: Claude Code își reîmprospătează tokenul când e folosit.
             let _ = run_cli(app, "claude", &["auth", "status"]).await;
             creds = load_credentials().map_err(Failure::msg)?;
+            if creds.expired(now_ms()) {
+                // `auth status` nu atinge mereu API-ul; un prompt minim forțează refresh-ul tokenului.
+                let _ = tokio::time::timeout(
+                    std::time::Duration::from_secs(90),
+                    run_cli(app, "claude", &["-p", "ok", "--max-turns", "1"]),
+                )
+                .await;
+                creds = load_credentials().map_err(Failure::msg)?;
+            }
         }
         if creds.expired(now_ms()) {
             return Err(Failure::msg(
