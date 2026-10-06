@@ -1,4 +1,4 @@
-use super::{extract_string, first_existing, home_config_paths, http_client, run_cli};
+use super::{extract_string, first_existing, home_config_paths, http_client};
 use crate::models::{collect_quotas, PlatformMetric};
 use serde_json::Value;
 use std::path::PathBuf;
@@ -7,17 +7,12 @@ use tauri::AppHandle;
 const ID: &str = "chatgpt";
 const LABEL: &str = "ChatGPT Plus";
 
-pub async fn fetch(app: &AppHandle) -> PlatformMetric {
+pub async fn fetch(_app: &AppHandle) -> PlatformMetric {
     let mut errors = Vec::new();
 
     match try_wham_usage().await {
         Ok(metric) => return metric,
         Err(err) => errors.push(format!("http:chatgpt.com/wham — {err}")),
-    }
-
-    match try_cli(app).await {
-        Ok(metric) => return metric,
-        Err(err) => errors.push(format!("cli:codex — {err}")),
     }
 
     match try_http().await {
@@ -28,29 +23,19 @@ pub async fn fetch(app: &AppHandle) -> PlatformMetric {
     PlatformMetric::unavailable(ID, LABEL, errors.join(" | "))
 }
 
-async fn try_cli(app: &AppHandle) -> Result<PlatformMetric, String> {
-    let raw = run_cli(app, "codex", &["status", "--json"]).await?;
-    let json: Value = serde_json::from_str(&raw).map_err(|e| format!("JSON invalid: {e}"))?;
-    let (short, weekly) = collect_quotas(&json);
-    if short.is_none() && weekly.is_none() {
-        return Err("codex status has no remaining/limit".into());
-    }
-    Ok(PlatformMetric::with_windows(
-        ID,
-        LABEL,
-        "cli:codex",
-        short,
-        weekly,
-    ))
-}
-
 async fn try_wham_usage() -> Result<PlatformMetric, String> {
     let token = load_openai_token()?;
+    let account = load_account_id();
     let client = http_client()?;
-    let response = client
+    let mut request = client
         .get("https://chatgpt.com/backend-api/wham/usage")
         .bearer_auth(token)
-        .header("User-Agent", "codex_cli_rs/0.155.1")
+        .header("User-Agent", "codex_cli_rs/0.160.1")
+        .header("Accept", "application/json");
+    if let Some(id) = account {
+        request = request.header("ChatGPT-Account-Id", id);
+    }
+    let response = request
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -73,7 +58,8 @@ async fn try_wham_usage() -> Result<PlatformMetric, String> {
 }
 
 fn quota_from_window(window: Option<&Value>) -> Result<Option<crate::models::WindowQuota>, String> {
-    let Some(window) = window else {
+    // `secondary_window: null` este un răspuns valid (cont fără fereastră săptămânală).
+    let Some(window) = window.filter(|w| !w.is_null()) else {
         return Ok(None);
     };
     let used = window
@@ -119,6 +105,21 @@ async fn try_http() -> Result<PlatformMetric, String> {
     ))
 }
 
+fn auth_paths() -> Vec<PathBuf> {
+    let mut paths = home_config_paths(&["openai", "auth.json"]);
+    if let Some(home) = dirs::home_dir() {
+        paths.insert(0, home.join(".codex").join("auth.json"));
+    }
+    paths
+}
+
+/// `ChatGPT-Account-Id` îl trimite și Codex CLI; fără el unele conturi primesc 403.
+fn load_account_id() -> Option<String> {
+    let path = first_existing(&auth_paths())?;
+    let json = super::read_json_file(&path).ok()?;
+    extract_string(&json, &["account_id", "chatgpt_account_id"])
+}
+
 fn load_openai_token() -> Result<String, String> {
     let mut paths = home_config_paths(&["openai", "auth.json"]);
     if let Some(home) = dirs::home_dir() {
@@ -149,4 +150,24 @@ fn load_openai_token() -> Result<String, String> {
         ],
     )
     .ok_or_else(|| "auth.json has no access_token".into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn null_secondary_window_is_not_an_error() {
+        assert!(quota_from_window(Some(&Value::Null)).unwrap().is_none());
+        assert!(quota_from_window(None).unwrap().is_none());
+    }
+
+    #[test]
+    fn primary_window_is_parsed() {
+        let w = json!({"used_percent": 7.0, "reset_at": 1_800_000_000i64});
+        let q = quota_from_window(Some(&w)).unwrap().unwrap();
+        assert_eq!(q.remaining, 93.0);
+        assert_eq!(q.reset_at_ms, 1_800_000_000_000);
+    }
 }
